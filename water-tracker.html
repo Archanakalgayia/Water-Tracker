@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Water</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A1E29; --card: #10293A; --card-2: #143349;
+    --foam: #E7F3F6; --foam-dim: #9CB8C4; --tide: #2E86AB; --wave: #5FD0F3; --line: #1C3E52;
+    --star: #F5C24D;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #F0F6F8; --card: #FFFFFF; --card-2: #E9F3F6;
+      --foam: #0F2733; --foam-dim: #5C7A87; --tide: #1F6E8C; --wave: #2FA8CE; --line: #D6E6EA;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  body { height: 100%; margin: 0; background: var(--bg); color: var(--foam); font-family: 'Inter', -apple-system, sans-serif; display: flex; justify-content: center; padding: 32px 18px; }
+  .app { width: 100%; max-width: 420px; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .top h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .top-right { display: flex; align-items: center; gap: 14px; }
+  .top button { background: none; border: none; color: var(--foam-dim); font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 4px; }
+  .top button:hover { color: var(--wave); }
+  .bell { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--card); }
+  .bell.on { border-color: var(--star); }
+  .bell svg { width: 16px; height: 16px; stroke: var(--foam-dim); }
+  .bell.on svg { stroke: var(--star); }
+
+  .streak { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--foam-dim); margin-bottom: 20px; }
+  .streak b { color: var(--star); font-weight: 600; }
+
+  .ring-wrap { position: relative; width: 240px; height: 240px; margin: 8px auto 26px; }
+  svg.ring { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 14; }
+  .ring-fill { fill: none; stroke: var(--wave); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1); }
+  .ring-fill.complete { stroke: var(--star); }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-num { font-family: 'Fraunces', serif; font-size: 44px; font-weight: 600; line-height: 1; }
+  .ring-num span { font-size: 18px; font-weight: 400; color: var(--foam-dim); }
+  .ring-sub { font-size: 13px; color: var(--foam-dim); margin-top: 6px; }
+
+  .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .quick button { background: var(--card); border: 1px solid var(--line); border-radius: 14px; color: var(--foam); padding: 14px 6px; font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: border-color .15s, transform .1s; }
+  .quick button:hover { border-color: var(--tide); }
+  .quick button:active { transform: scale(0.96); }
+  .quick button svg { width: 20px; height: 20px; }
+  .quick button b { font-weight: 600; font-size: 13px; }
+
+  .custom-row { display: flex; gap: 8px; margin-bottom: 26px; }
+  .custom-row input { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; color: var(--foam); padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 14px; }
+  .custom-row input:focus { outline: none; border-color: var(--tide); }
+  .custom-row button { background: var(--tide); border: none; border-radius: 12px; color: #fff; padding: 0 20px; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 14px; cursor: pointer; }
+
+  .section-label { font-size: 13px; color: var(--foam-dim); margin: 0 0 10px 2px; }
+
+  .schedule { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+  .slot { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; }
+  .slot .chk { width: 22px; height: 22px; border-radius: 50%; border: 1.6px solid var(--tide); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+  .slot .chk svg { width: 12px; height: 12px; opacity: 0; stroke: #fff; }
+  .slot.done .chk { background: var(--tide); }
+  .slot.done .chk svg { opacity: 1; }
+  .slot .time { font-size: 14px; font-weight: 500; width: 66px; flex-shrink: 0; }
+  .slot.done .time { color: var(--foam-dim); }
+  .slot.due { border-color: var(--star); }
+  .slot .amt { font-size: 13px; color: var(--foam-dim); margin-left: auto; }
+
+  .week { display: flex; justify-content: space-between; align-items: flex-end; height: 116px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 14px 10px; margin-bottom: 18px; }
+  .day { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
+  .day .star-slot { height: 14px; display: flex; align-items: center; justify-content: center; }
+  .day .star-slot svg { width: 13px; height: 13px; fill: var(--star); }
+  .day .bar-track { width: 10px; height: 56px; background: var(--line); border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
+  .day .bar-fill { width: 100%; background: var(--wave); border-radius: 6px; transition: height 0.4s ease; }
+  .day.complete .bar-fill { background: var(--star); }
+  .day.today .bar-fill { background: var(--tide); }
+  .day.today.complete .bar-fill { background: var(--star); }
+  .day span.lbl { font-size: 10px; color: var(--foam-dim); }
+
+  .log { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .log-row { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+  .log-row .amt { font-weight: 500; }
+  .log-row .time { color: var(--foam-dim); }
+  .log-row .del { background: none; border: none; color: var(--foam-dim); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px; }
+  .log-row .del:hover { color: #E86A5C; }
+  .empty { text-align: center; color: var(--foam-dim); font-size: 13px; padding: 18px 0; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(4,14,20,.72); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 24px; width: 100%; max-width: 360px; }
+  .modal h2 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .modal p.hint { color: var(--foam-dim); font-size: 13px; margin: 0 0 20px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--foam-dim); margin-bottom: 7px; }
+  .field input { width: 100%; background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; color: var(--foam); padding: 11px 13px; font-family: 'Inter', sans-serif; font-size: 14px; }
+  .field input:focus { outline: none; border-color: var(--tide); }
+  .pills { display: flex; gap: 8px; }
+  .pill { flex: 1; background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 4px; text-align: center; font-size: 13px; color: var(--foam-dim); cursor: pointer; }
+  .pill.active { border-color: var(--tide); color: var(--foam); background: rgba(46,134,171,.18); }
+  .modal .save-btn { width: 100%; background: var(--tide); border: none; border-radius: 12px; color: #fff; padding: 13px; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 14px; cursor: pointer; margin-top: 6px; }
+  .modal .skip { display: block; text-align: center; width: 100%; background: none; border: none; color: var(--foam-dim); font-size: 12px; margin-top: 12px; cursor: pointer; }
+
+  .buddy-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 4px; }
+  .buddy { width: 64px; height: 64px; flex-shrink: 0; animation: bob 2.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .buddy .cheek { fill: #ffffff; opacity: .35; }
+  .buddy .eye { fill: var(--bg); }
+  .buddy .happy-eye, .buddy .mouth-happy { display: none; }
+  .buddy.complete .eye, .buddy.complete .mouth { display: none; }
+  .buddy.complete .happy-eye, .buddy.complete .mouth-happy { display: block; }
+  .bubble { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 13px; line-height: 1.35; flex: 1; }
+  .bubble b { color: var(--wave); }
+  .bubble.complete b { color: var(--star); }
+  .bubble:after { content: ''; position: absolute; left: -6px; bottom: 14px; width: 12px; height: 12px; background: var(--card); border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: var(--card-2); border: 1px solid var(--star); color: var(--foam); padding: 12px 20px; border-radius: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 20; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast svg { width: 16px; height: 16px; fill: var(--star); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>Water</h1>
+    <div class="top-right">
+      <div class="bell" id="bell" title="Reminders">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </div>
+      <button id="testSound" style="font-size:12px;color:var(--foam-dim);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;">Test sound</button>
+      <button id="profileToggle">Profile</button>
+    </div>
+  </div>
+
+  <div class="streak" id="streak"></div>
+
+  <div class="buddy-row">
+    <svg class="buddy" id="buddy" viewBox="0 0 100 100">
+      <path d="M50 6C50 6 22 42 22 63a28 28 0 0 0 56 0C78 42 50 6 50 6z" fill="var(--wave)"/>
+      <ellipse class="cheek" cx="30" cy="66" rx="6" ry="4"/>
+      <ellipse class="cheek" cx="70" cy="66" rx="6" ry="4"/>
+      <g class="eye">
+        <ellipse cx="38" cy="58" rx="4.5" ry="5.5"/>
+        <ellipse cx="62" cy="58" rx="4.5" ry="5.5"/>
+      </g>
+      <g class="happy-eye" stroke="var(--bg)" stroke-width="3.4" stroke-linecap="round" fill="none">
+        <path d="M33 58q5-6 10 0"/>
+        <path d="M57 58q5-6 10 0"/>
+      </g>
+      <path class="mouth" d="M43 72q7 6 14 0" stroke="var(--bg)" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path class="mouth-happy" d="M40 70q10 12 20 0q-10 8 -20 0" fill="var(--bg)"/>
+    </svg>
+    <div class="bubble" id="buddyBubble">Loading…</div>
+  </div>
+
+  <div class="ring-wrap">
+    <svg class="ring" viewBox="0 0 200 200">
+      <circle class="ring-track" cx="100" cy="100" r="88"></circle>
+      <circle class="ring-fill" id="ringFill" cx="100" cy="100" r="88" stroke-dasharray="552.9" stroke-dashoffset="552.9"></circle>
+    </svg>
+    <div class="ring-center">
+      <div class="ring-num" id="ringNum">0<span> ml</span></div>
+      <div class="ring-sub" id="ringSub">of 2000 ml</div>
+    </div>
+  </div>
+
+  <div class="quick" id="quickButtons">
+    <button data-ml="150"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3h8l-1 5-3 3-3-3-1-5z"/><path d="M6 21h12l-1.2-11H7.2L6 21z"/></svg><b>150</b>Glass</button>
+    <button data-ml="250"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="4" width="10" height="16" rx="2"/><path d="M9 4V2h6v2"/></svg><b>250</b>Cup</button>
+    <button data-ml="500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2h6v4l2 3v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3V2z"/></svg><b>500</b>Bottle</button>
+    <button data-ml="1000"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 2h10l1 5-3 4v9a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-9L6 7l1-5z"/></svg><b>1L</b>Large</button>
+  </div>
+
+  <div class="custom-row">
+    <input type="number" id="customMl" placeholder="Custom amount (ml)" min="1">
+    <button id="customAdd">Add</button>
+  </div>
+
+  <p class="section-label">Today's schedule</p>
+  <div class="schedule" id="schedule"></div>
+
+  <p class="section-label">Last 7 days</p>
+  <div class="week" id="week"></div>
+
+  <p class="section-label">Today's log</p>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">A quick estimate</h2>
+    <p class="hint">Age and weight help set a daily target and split it into drinking times. This is a general estimate, not medical advice.</p>
+    <div class="field">
+      <label>Age</label>
+      <input type="number" id="fAge" placeholder="e.g. 29" min="1" max="120">
+    </div>
+    <div class="field">
+      <label>Weight</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="fWeight" placeholder="e.g. 68" min="1" style="flex:1;">
+        <div class="pills" style="width:120px;">
+          <div class="pill active" data-unit="kg">kg</div>
+          <div class="pill" data-unit="lb">lb</div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Activity level</label>
+      <div class="pills" id="activityPills">
+        <div class="pill active" data-act="sedentary">Low</div>
+        <div class="pill" data-act="moderate">Moderate</div>
+        <div class="pill" data-act="active">High</div>
+      </div>
+    </div>
+    <button class="save-btn" id="modalSave">Calculate my target</button>
+    <button class="skip" id="modalSkip">Skip — I'll set it manually</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'water-tracker-data-v3';
+  const todayKey = () => new Date().toISOString().slice(0, 10);
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); };
+
+  function load() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); }
+    catch (e) { console.error('load failed', e); }
+    return { profile: null, goal: 2000, slots: null, entries: {}, stars: {}, streak: 0, notified: {}, remindersOn: false };
+  }
+  function save(state) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.error('save failed', e); }
+  }
+
+  let state = load();
+  if (!state.entries) state.entries = {};
+  if (!state.stars) state.stars = {};
+  if (!state.notified) state.notified = {};
+  if (typeof state.streak !== 'number') state.streak = 0;
+
+  function computeGoal(age, weightKg, activity) {
+    let ml = weightKg * 33;
+    if (age > 55) ml *= 0.95; else if (age < 30) ml *= 1.0; else ml *= 0.97;
+    if (activity === 'moderate') ml += 350;
+    if (activity === 'active') ml += 700;
+    return Math.round(ml / 50) * 50;
+  }
+
+  function buildSlots(goal, count) {
+    const startMin = 7 * 60, endMin = 22 * 60;
+    const step = (endMin - startMin) / (count - 1);
+    const base = Math.floor(goal / count / 10) * 10;
+    let remainder = goal - base * count;
+    const slots = [];
+    for (let i = 0; i < count; i++) {
+      const t = startMin + step * i;
+      const h = Math.floor(t / 60), m = Math.round(t % 60);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = ((h + 11) % 12) + 1;
+      let ml = base;
+      if (i === count - 1) ml += remainder;
+      slots.push({ label: h12 + (m ? ':' + String(m).padStart(2,'0') : '') + ' ' + ampm, minutes: Math.round(t), ml });
+    }
+    return slots;
+  }
+
+  // ---- sound + notification ----
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [880, 1108];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine'; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        const start = ctx.currentTime + i * 0.16;
+        gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(start); osc.stop(start + 0.34);
+      });
+    } catch (e) { /* audio unavailable */ }
+  }
+  function speak(text) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1; u.pitch = 1.05; u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* speech unavailable */ }
+  }
+  function notify(ml) {
+    beep();
+    setTimeout(() => speak('It\u2019s water time. Drink ' + ml + ' milliliters.'), 400);
+    if (state.remindersOn && 'Notification' in window && Notification.permission === 'granted') {
+      try { new Notification('💧 Water time', { body: 'Drink ' + ml + ' ml to stay on track.' }); }
+      catch (e) {}
+    }
+    showToast('💧 Water time — drink ' + ml + ' ml');
+  }
+  const bell = document.getElementById('bell');
+  function updateBell() { bell.classList.toggle('on', !!state.remindersOn); }
+  bell.addEventListener('click', () => {
+    if (!state.remindersOn) {
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission().then(p => {
+          state.remindersOn = (p === 'granted');
+          save(state); updateBell();
+        });
+      } else { state.remindersOn = true; save(state); updateBell(); }
+    } else { state.remindersOn = false; save(state); updateBell(); }
+  });
+  updateBell();
+  document.getElementById('testSound').addEventListener('click', () => {
+    beep();
+    setTimeout(() => speak('It\u2019s water time!'), 400);
+    showToast('🔊 That\u2019s the water-time sound');
+  });
+
+  function starIcon() { return '<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17l-6.1 3.6 1.4-6.8L2.2 9.1l6.9-.8L12 2z"/></svg>'; }
+  const toastEl = document.getElementById('toast');
+  let toastTimer;
+  function showToast(html) {
+    toastEl.innerHTML = html;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3200);
+  }
+
+  // ---- onboarding ----
+  const overlay = document.getElementById('overlay');
+  if (!state.profile) overlay.classList.add('open');
+
+  let unit = 'kg', activity = 'sedentary';
+  document.querySelectorAll('.pill[data-unit]').forEach(p => p.addEventListener('click', () => {
+    document.querySelectorAll('.pill[data-unit]').forEach(x => x.classList.remove('active'));
+    p.classList.add('active'); unit = p.dataset.unit;
+  }));
+  document.querySelectorAll('.pill[data-act]').forEach(p => p.addEventListener('click', () => {
+    document.querySelectorAll('.pill[data-act]').forEach(x => x.classList.remove('active'));
+    p.classList.add('active'); activity = p.dataset.act;
+  }));
+  document.getElementById('modalSave').addEventListener('click', () => {
+    const age = parseInt(document.getElementById('fAge').value, 10);
+    let weight = parseFloat(document.getElementById('fWeight').value);
+    if (!age || !weight) return;
+    const weightKg = unit === 'lb' ? weight * 0.453592 : weight;
+    const goal = computeGoal(age, weightKg, activity);
+    state.profile = { age, weight, unit, activity };
+    state.goal = goal;
+    state.slots = buildSlots(goal, 8);
+    save(state); overlay.classList.remove('open'); render();
+  });
+  document.getElementById('modalSkip').addEventListener('click', () => {
+    state.profile = { skipped: true };
+    if (!state.goal) state.goal = 2000;
+    if (!state.slots) state.slots = buildSlots(state.goal, 8);
+    save(state); overlay.classList.remove('open'); render();
+  });
+  document.getElementById('profileToggle').addEventListener('click', () => {
+    if (state.profile && !state.profile.skipped) {
+      document.getElementById('fAge').value = state.profile.age;
+      document.getElementById('fWeight').value = state.profile.weight;
+      unit = state.profile.unit; activity = state.profile.activity;
+      document.querySelectorAll('.pill[data-unit]').forEach(p => p.classList.toggle('active', p.dataset.unit === unit));
+      document.querySelectorAll('.pill[data-act]').forEach(p => p.classList.toggle('active', p.dataset.act === activity));
+    }
+    overlay.classList.add('open');
+  });
+
+  const ringFill = document.getElementById('ringFill');
+  const ringNum = document.getElementById('ringNum');
+  const ringSub = document.getElementById('ringSub');
+  const weekEl = document.getElementById('week');
+  const logEl = document.getElementById('log');
+  const scheduleEl = document.getElementById('schedule');
+  const streakEl = document.getElementById('streak');
+  const CIRC = 2 * Math.PI * 88;
+
+  function todayList() { return state.entries[todayKey()] || []; }
+  function todayTotal() { return todayList().reduce((s, e) => s + e.ml, 0); }
+
+  function updateStreakAndStars() {
+    const goal = state.goal || 2000;
+    const key = todayKey();
+    const total = todayTotal();
+    const already = !!state.stars[key];
+    if (total >= goal && !already) {
+      state.stars[key] = true;
+      const yKey = yesterdayKey();
+      state.streak = state.stars[yKey] ? state.streak + 1 : 1;
+      save(state);
+      showToast(starIcon() + ' Goal complete — day ' + state.streak + ' streak!');
+    } else if (total < goal && already) {
+      delete state.stars[key];
+      save(state);
+    }
+  }
+
+  function render() {
+    const goal = state.goal || 2000;
+    const total = todayTotal();
+    const pct = Math.min(total / goal, 1);
+    ringFill.setAttribute('stroke-dasharray', CIRC.toFixed(1));
+    ringFill.setAttribute('stroke-dashoffset', (CIRC * (1 - pct)).toFixed(1));
+    ringFill.classList.toggle('complete', total >= goal);
+    ringNum.innerHTML = total + '<span> ml</span>';
+    ringSub.textContent = 'of ' + goal + ' ml';
+
+    const buddy = document.getElementById('buddy');
+    const bubble = document.getElementById('buddyBubble');
+    const remaining = Math.max(0, goal - total);
+    if (remaining === 0) {
+      buddy.classList.add('complete');
+      bubble.classList.add('complete');
+      bubble.innerHTML = '<b>Star earned!</b> You hit your goal today \u2014 nice work.';
+    } else {
+      buddy.classList.remove('complete');
+      bubble.classList.remove('complete');
+      bubble.innerHTML = '<b>' + remaining + ' ml</b> left to earn today\u2019s star!';
+    }
+
+    streakEl.innerHTML = state.streak > 0
+      ? starIcon().replace('<svg', '<svg style="width:15px;height:15px;fill:var(--star)"') + ' <b>' + state.streak + ' day' + (state.streak === 1 ? '' : 's') + '</b> streak'
+      : 'Finish today\u2019s goal to start a streak';
+
+    // schedule
+    scheduleEl.innerHTML = '';
+    const slots = state.slots || buildSlots(goal, 8);
+    const list = todayList();
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    slots.forEach((slot, idx) => {
+      const doneEntry = list.find(e => e.slot === idx);
+      const isDue = !doneEntry && slot.minutes <= nowMin && slot.minutes > nowMin - 60;
+      const row = document.createElement('div');
+      row.className = 'slot' + (doneEntry ? ' done' : '') + (isDue ? ' due' : '');
+      row.innerHTML = `<div class="chk" data-idx="${idx}"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><span class="time">${slot.label}</span><span class="amt">${slot.ml} ml</span>`;
+      scheduleEl.appendChild(row);
+    });
+
+    // week bars
+    weekEl.innerHTML = '';
+    const labels = ['S','M','T','W','T','F','S'];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const dayTotal = (state.entries[key] || []).reduce((s, e) => s + e.ml, 0);
+      const complete = !!state.stars[key] || dayTotal >= goal;
+      const h = Math.max(4, Math.min(56, (dayTotal / goal) * 56));
+      const div = document.createElement('div');
+      div.className = 'day' + (i === 0 ? ' today' : '') + (complete ? ' complete' : '');
+      div.innerHTML = `<div class="star-slot">${complete ? starIcon() : ''}</div><div class="bar-track"><div class="bar-fill" style="height:${h}px"></div></div><span class="lbl">${labels[d.getDay()]}</span>`;
+      weekEl.appendChild(div);
+    }
+
+    // log
+    if (list.length === 0) {
+      logEl.innerHTML = '<div class="empty">Nothing logged yet today.</div>';
+    } else {
+      logEl.innerHTML = '';
+      [...list].reverse().forEach((entry) => {
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        const t = new Date(entry.at);
+        const time = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        row.innerHTML = `<span class="amt">${entry.ml} ml</span><span class="time">${time}</span><button class="del" data-id="${entry.id}">&times;</button>`;
+        logEl.appendChild(row);
+      });
+    }
+  }
+
+  function addEntry(ml, slotIdx) {
+    if (!ml || ml <= 0) return;
+    const key = todayKey();
+    if (!state.entries[key]) state.entries[key] = [];
+    const entry = { id: Date.now() + Math.random(), ml, at: Date.now() };
+    if (slotIdx !== undefined) entry.slot = slotIdx;
+    state.entries[key].push(entry);
+    save(state); updateStreakAndStars(); render();
+  }
+  function removeSlotEntry(slotIdx) {
+    const key = todayKey();
+    state.entries[key] = (state.entries[key] || []).filter(e => e.slot !== slotIdx);
+    save(state); updateStreakAndStars(); render();
+  }
+
+  document.getElementById('quickButtons').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-ml]');
+    if (btn) addEntry(parseInt(btn.dataset.ml, 10));
+  });
+  document.getElementById('customAdd').addEventListener('click', () => {
+    const input = document.getElementById('customMl');
+    const val = parseInt(input.value, 10);
+    if (val > 0) { addEntry(val); input.value = ''; }
+  });
+  document.getElementById('customMl').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('customAdd').click();
+  });
+  scheduleEl.addEventListener('click', (e) => {
+    const chk = e.target.closest('.chk');
+    if (!chk) return;
+    const idx = parseInt(chk.dataset.idx, 10);
+    const list = todayList();
+    const existing = list.find(en => en.slot === idx);
+    if (existing) removeSlotEntry(idx);
+    else addEntry(state.slots[idx].ml, idx);
+  });
+  logEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button.del');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const key = todayKey();
+    state.entries[key] = (state.entries[key] || []).filter(en => String(en.id) !== id);
+    save(state); updateStreakAndStars(); render();
+  });
+
+  // periodic check for due slot notifications
+  setInterval(() => {
+    if (!state.slots) return;
+    const key = todayKey();
+    const list = todayList();
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    if (!state.notified[key]) state.notified[key] = [];
+    state.slots.forEach((slot, idx) => {
+      const done = list.find(e => e.slot === idx);
+      const already = state.notified[key].includes(idx);
+      if (!done && !already && Math.abs(slot.minutes - nowMin) <= 1) {
+        state.notified[key].push(idx);
+        save(state);
+        notify(slot.ml);
+        render();
+      }
+    });
+  }, 30000);
+
+  if (state.profile) { updateStreakAndStars(); render(); }
+})();
+</script>
+</body>
+</html>
